@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El Validador de Formularios</title>
+<style>
+:root{--bg:#eef3ee;--fg:#14241a;--card:#fff;--meb:#f1f9d8;--line:#d3ddd5;--muted:#5d6d62;--acc:#c4f24f;--accfg:#14241a;--bad:#c0392b;--good:#1e8449;--shadow:0 6px 24px rgba(20,36,26,.08);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1712;--fg:#e8efe9;--card:#16251c;--meb:#22381f;--line:#2a4033;--muted:#9bb0a2;--bad:#ff7b6b;--good:#6fdc8f;--shadow:0 6px 24px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--bg:#0e1712;--fg:#e8efe9;--card:#16251c;--meb:#22381f;--line:#2a4033;--muted:#9bb0a2;--bad:#ff7b6b;--good:#6fdc8f;--shadow:0 6px 24px rgba(0,0,0,.35)}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 120px)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+[hidden]{display:none!important}
+main{max-width:620px;margin:0 auto;padding:16px 16px 40px}
+.hero{display:flex;justify-content:space-between;align-items:center;gap:14px;background:linear-gradient(135deg,#1f3d2c,#12212b);color:#eef6ee;border-radius:18px;padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.eyebrow{font:600 .68rem ui-monospace,Menlo,Consolas,monospace;letter-spacing:.18em;color:#9fb8a8;margin-bottom:6px}
+.hero h1{margin:0 0 6px;font-size:1.6rem;line-height:1.15}
+.hero p{margin:0;font-size:.9rem;color:#cfe0d4}
+.badge{flex:none;width:52px;height:52px;border-radius:50%;background:var(--acc);color:#14241a;display:grid;place-items:center;font-size:1.5rem}
+.steps{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px}
+.st{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:700;border:2px solid var(--line);color:var(--muted)}
+.st.c{border-color:var(--fg);color:var(--fg)}
+.st.d{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 12px;font-size:1.1rem}
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:6px 0 10px}
+.arena{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:8px}
+.fighter{display:flex;align-items:center;gap:8px;position:relative;min-width:0}
+.fighter.boss{justify-content:flex-end;text-align:right}
+.fav{flex:none;width:44px;height:44px;border-radius:50%;background:var(--card);border:2px solid var(--line);display:grid;place-items:center;font-size:1.6rem}
+.fi{min-width:0;font-size:.8rem;flex:1}
+.fi b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi small{color:var(--muted)}
+.hp{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:3px 0 2px}
+#bhp{height:100%;width:100%;background:var(--bad);transition:width .5s}
+.mid{text-align:center;font-weight:800;line-height:1.1}
+.mid .lvl{font-size:.7rem;font-weight:600;color:var(--muted)}
+.tm{font-size:1.1rem;font-variant-numeric:tabular-nums}
+.bar{height:10px;background:var(--line);border-radius:8px;overflow:hidden}
+#fill{height:100%;width:100%;background:var(--acc);transition:width 1s linear}
+#fill.low{background:var(--bad)}
+.dmg{position:absolute;right:52px;top:-6px;color:var(--bad);font-weight:900;font-size:1.25rem;animation:fl .9s forwards;pointer-events:none}
+@keyframes fl{to{transform:translateY(-26px);opacity:0}}
+.hurt{animation:sh .35s}
+@keyframes sh{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.atk{animation:lg .4s}
+@keyframes lg{50%{transform:translateX(-18px) scale(1.15)}}
+.chat{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:flex-end;animation:in .35s both}
+.row.me{flex-direction:row-reverse}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.av{flex:none;width:46px;height:46px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:1.6rem;box-shadow:var(--shadow)}
+.talk{animation:bob .45s ease 3}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.bubble{box-shadow:var(--shadow)}
+.row.npc .bubble{background:var(--card);border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:10px 14px;max-width:85%}
+.row.me .bubble{flex:1;min-width:0;background:var(--meb);border:1px solid var(--line);border-radius:16px 16px 4px 16px;padding:12px 14px}
+.bubble p{margin:2px 0 0}
+.sub{font-size:.75rem;color:var(--muted)}
+.f{scroll-margin-top:130px}
+.f label{display:block;font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:5px}
+.f input{width:100%;padding:11px 12px;font:inherit;font-size:16px;color:var(--fg);background:var(--card);border:2px solid var(--line);border-radius:10px;outline:none}
+.f input:focus{border-color:var(--fg)}
+.f.good input{border-color:var(--good)}
+.f.bad input{border-color:var(--bad)}
+.rules{list-style:none;margin:8px 0 0;padding:0;font-size:.84rem;color:var(--muted)}
+.rules li{padding:2px 0 2px 22px;position:relative}
+.rules li::before{content:"○";position:absolute;left:2px}
+.rules li.ok{color:var(--good)}
+.rules li.ok::before{content:"✔"}
+.rules li.bad{color:var(--bad);font-weight:600}
+.rules li.bad::before{content:"✘"}
+.err{color:var(--bad);font-weight:700;font-size:.88rem;margin-top:6px}
+.err:empty{display:none}
+.btn{width:100%;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:800;background:var(--acc);color:var(--accfg);cursor:pointer}
+.btn:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){.row,.hurt,.atk,.talk,.dmg{animation:none}#fill,#bhp{transition:none}}
+.muted{color:var(--muted);font-size:.9rem}
+ul.how{padding-left:20px;margin:8px 0 14px}
+.big{font-size:2.4rem;margin:4px 0}
+.rank{font-size:1.4rem;font-weight:800;margin:4px 0 8px}
+.rowst{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 14px}
+.rowst span{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+<header class="hero">
+<div>
+<div class="eyebrow">TEMÁTICA OBLIGATORIA DE TU NIVEL</div>
+<h1>El Validador de Formularios</h1>
+<p>Duelo contra el Jefe Final: responde con datos correctos y quítale la vida. Cuidado con los campos vacíos, los formatos y las condiciones.</p>
+</div>
+<div class="badge">✦</div>
+</header>
+
+<nav id="steps" class="steps" aria-label="Progreso de niveles"></nav>
+
+<section id="start" class="card">
+<h2>¿Cómo se juega?</h2>
+<ul class="how">
+<li>Te enfrentas al <b>Jefe Final</b> 👑 en <b>10 rondas</b>. Él te pide tus datos y tú le respondes.</li>
+<li>Cada <b>campo correcto</b> le quita <b>10 HP</b>. Si dejas su vida en 0 al terminar, ganas.</li>
+<li>Tienes <b>30 segundos</b> por ronda y <b>3 vidas</b> ❤️❤️❤️. Si envías con errores o se acaba el tiempo, el jefe te ataca y pierdes una.</li>
+<li>★★★ si superas la ronda a la primera, ★★ a la segunda y ★ después. Las reglas se vuelven más exigentes.</li>
+</ul>
+<p class="muted">Puedes inventar los datos. No escribas tus contraseñas reales.</p>
+<button class="btn" id="go">Empezar el duelo</button>
+</section>
+
+<section id="game" hidden>
+<div class="hud">
+<div class="arena">
+<div class="fighter" id="pl"><div class="fav">🙋</div><div class="fi"><b>Tú</b><div id="hearts"></div></div></div>
+<div class="mid"><div class="tm">⏱ <span id="tm">30</span> s</div><div class="lvl">Ronda <span id="hn">1</span>/10</div></div>
+<div class="fighter boss" id="boss"><div class="fi"><b>El Jefe Final</b><div class="hp"><div id="bhp"></div></div><small id="bt"></small></div><div class="fav" id="bav">😈</div></div>
+</div>
+<div class="bar"><div id="fill"></div></div>
+</div>
+<div class="chat" id="chat"></div>
+<button class="btn" id="send">Enviar respuestas</button>
+<button class="btn" id="next" hidden>Siguiente ronda</button>
+</section>
+
+<section id="end" class="card" hidden style="text-align:center">
+<div class="big" id="eb">🏆</div>
+<div class="rank" id="rk"></div>
+<p id="tot"></p>
+<div class="rowst" id="det"></div>
+<button class="btn" id="again">Jugar de nuevo</button>
+</section>
+</main>
+
+<script>
+const TIEMPO=30, DMG=10;
+const LET="A-Za-zÁÉÍÓÚÜÑáéíóúüñ", W="[A-ZÁÉÍÓÚÑ][a-záéíóúüñ]*";
+const mk=(id,label,ph,rules,q)=>({id,label,ph,rules,q});
+const nombreUp=()=>mk("nombre","Nombre","Escribe tu nombre",[
+ ["Una sola palabra, sin espacios",v=>/^\S+$/.test(v)],
+ ["Solo letras (sin números ni símbolos)",v=>new RegExp("^["+LET+"]+$").test(v)],
+ ["Todo en MAYÚSCULAS",v=>v===v.toUpperCase()&&v!==v.toLowerCase()]],"¿Cómo te llamas? Dime solo un nombre.");
+const nombre1=()=>mk("nombre","Nombre","Escribe tu nombre",[
+ ["Una sola palabra, sin espacios",v=>/^\S+$/.test(v)],
+ ["Solo letras (sin números ni símbolos)",v=>new RegExp("^["+LET+"]+$").test(v)],
+ ["Solo la primera letra en mayúscula",v=>new RegExp("^"+W+"$").test(v)]],"¿Cuál es tu nombre?");
+const nombreC=(lo,hi)=>mk("nombre","Nombre completo","Nombre y apellido",[
+ [lo===hi?"Exactamente "+lo+" palabras, separadas por un solo espacio":"Entre "+lo+" y "+hi+" palabras, separadas por un solo espacio",v=>{const p=v.split(" ");return p.length>=lo&&p.length<=hi&&p.every(x=>x)}],
+ ["Solo letras (sin números ni símbolos)",v=>new RegExp("^["+LET+"]+( ["+LET+"]+)*$").test(v)],
+ ["Cada palabra empieza en mayúscula y el resto en minúscula",v=>new RegExp("^"+W+"( "+W+")*$").test(v)]],"¿Cuál es tu nombre completo?");
+const edad=()=>mk("edad","Edad","Solo el número",[
+ ["Solo dígitos, sin signos ni letras",v=>/^\d+$/.test(v)],
+ ["Sin ceros a la izquierda",v=>/^[1-9]/.test(v)],
+ ["Entre 18 y 99 años",v=>+v>=18&&+v<=99]],"¿Y cuántos años tienes?");
+const correo=()=>mk("correo","Correo electrónico","usuario@dominio.com",[
+ ["Sin espacios",v=>/^\S+$/.test(v)],
+ ["Exactamente un @",v=>v.split("@").length===2],
+ ["Al menos 3 caracteres antes del @",v=>v.split("@")[0].length>=3],
+ ["Todo en minúsculas",v=>v===v.toLowerCase()],
+ ["Dominio válido que termina en .com",v=>/@[a-z0-9-]+(\.[a-z0-9-]+)*\.com$/.test(v)]],"¿A qué correo electrónico te escribo?");
+const tel=()=>mk("tel","Teléfono celular","10 dígitos",[
+ ["Solo dígitos (sin espacios ni guiones)",v=>/^\d+$/.test(v)],
+ ["Exactamente 10 dígitos",v=>/^\d{10}$/.test(v)],
+ ["Empieza por 3",v=>/^3/.test(v)]],"¿Cuál es tu número de celular?");
+const user=()=>mk("user","Nombre de usuario","Crea tu usuario",[
+ ["Entre 6 y 12 caracteres",v=>v.length>=6&&v.length<=12],
+ ["Solo minúsculas y números",v=>/^[a-z0-9]+$/.test(v)],
+ ["No empieza por un número",v=>!/^\d/.test(v)],
+ ["Incluye al menos un número",v=>/\d/.test(v)]],"Elige un nombre de usuario.");
+const pass=()=>mk("pass","Contraseña","Crea una contraseña",[
+ ["Mínimo 8 caracteres",v=>v.length>=8],
+ ["Una mayúscula",v=>/[A-Z]/.test(v)],
+ ["Una minúscula",v=>/[a-z]/.test(v)],
+ ["Un número",v=>/\d/.test(v)],
+ ["Un símbolo (!@#$%&*)",v=>/[!@#$%&*]/.test(v)],
+ ["Sin espacios",v=>/^\S*$/.test(v)]],"Ahora crea una contraseña segura.");
+const pass2=()=>mk("pass2","Confirmar contraseña","Repite la contraseña",[
+ ["Idéntica a la contraseña de arriba",(v,vs)=>v===vs.pass]],"Repítela para confirmar.");
+const fd=v=>{const m=v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return null;const d=+m[1],o=+m[2],y=+m[3],t=new Date(y,o-1,d);return t.getFullYear()===y&&t.getMonth()===o-1&&t.getDate()===d?t:null};
+const fecha=()=>mk("fecha","Fecha de nacimiento","DD/MM/AAAA",[
+ ["Formato DD/MM/AAAA con ceros (ej. 05/03/2001)",v=>/^\d{2}\/\d{2}\/\d{4}$/.test(v)],
+ ["Es una fecha real (no existe el 31/02)",v=>fd(v)!==null],
+ ["No es una fecha futura",v=>{const t=fd(v);return !!t&&t<=new Date()}],
+ ["Tienes 18 años o más",v=>{const t=fd(v),n=new Date();return !!t&&t<=new Date(n.getFullYear()-18,n.getMonth(),n.getDate())}]],"¿En qué fecha naciste?");
+
+const LV=[
+ {t:"Un solo nombre",s:"¡Ja! Empecemos fácil: dame solo tu primer nombre.",f:[nombreUp()]},
+ {t:"Nombre y apellido",s:"Veamos si sabes escribir un nombre completo sin equivocarte.",f:[nombreC(2,2)]},
+ {t:"Nombre y edad",s:"Más datos. Y recuerda: solo pasan los mayores de edad.",f:[nombre1(),edad()]},
+ {t:"Correo electrónico",s:"Tu correo. Un solo error y te cuesta caro.",f:[correo()]},
+ {t:"Datos de contacto",s:"Teléfono y correo. No te distraigas.",f:[tel(),correo()]},
+ {t:"Usuario y teléfono",s:"Crea tu nick y deja tu número. ¡Rápido, que el tiempo corre!",f:[user(),tel()]},
+ {t:"Contraseña segura",s:"Ahora una clave fuerte. ¡Que no me la adivinen!",f:[pass(),pass2()]},
+ {t:"Fecha de nacimiento",s:"Las fechas imposibles no pasan. Ojo con los detalles.",f:[nombreC(2,2),fecha()]},
+ {t:"Registro de cuenta",s:"Abramos tu cuenta. Aquí no se perdona ningún detalle.",f:[user(),correo(),pass(),pass2()]},
+ {t:"Formulario final",s:"¡Casi me derrotas! Pero este es el formulario más largo. Un error y te destruyo.",f:[nombreC(2,3),fecha(),correo(),tel(),pass(),pass2()]}
+];
+const HPMAX=LV.reduce((a,l)=>a+l.f.length,0)*DMG;
+
+const $=id=>document.getElementById(id);
+let li=0,tries=0,done=false,att=false,cur,stars=[],lives=3,hp=HPMAX,dealt={},left=TIEMPO,timer;
+
+const face=()=>{const p=hp/HPMAX;return hp<=0?"💀":p>.66?"😈":p>.33?"😠":"🥵"};
+const anim=(el,c)=>{el.classList.remove(c);void el.offsetWidth;el.classList.add(c)};
+function steps(){
+ const s=$("steps");s.innerHTML="";
+ LV.forEach((_,i)=>{const x=document.createElement("span");x.className="st"+(stars[i]!==undefined?" d":i===li?" c":"");x.textContent=i+1;s.append(x)});
+}
+function hearts(){$("hearts").textContent="❤️".repeat(Math.max(lives,0))+"🖤".repeat(3-Math.max(lives,0))}
+function updBoss(){
+ $("bhp").style.width=(hp/HPMAX*100)+"%";
+ $("bt").textContent="HP "+hp+"/"+HPMAX;
+ $("bav").textContent=face();
+}
+function hit(d){
+ hp=Math.max(0,hp-d);updBoss();
+ const s=document.createElement("span");s.className="dmg";s.textContent="−"+d;$("boss").append(s);
+ setTimeout(()=>s.remove(),900);
+ anim($("boss"),"hurt");
+}
+function tick(){$("tm").textContent=left;$("fill").style.width=(left/TIEMPO*100)+"%";$("fill").classList.toggle("low",left<=10)}
+function startTimer(){
+ clearInterval(timer);left=TIEMPO;
+ const f=$("fill");f.style.transition="none";tick();void f.offsetWidth;f.style.transition="";
+ timer=setInterval(()=>{left--;tick();if(left<=0){clearInterval(timer);tries++;att=true;fail(true,0)}},1000);
+}
+const vals=()=>{const o={};cur.f.forEach(f=>o[f.id]=$("i_"+f.id).value);return o};
+function check(f,vs){
+ vs=vs||vals();
+ const v=vs[f.id],w=$("w_"+f.id),lis=w.querySelectorAll("li"),empty=v.trim()==="";
+ let ok=true;
+ f.rules.forEach((r,i)=>{const p=!empty&&r[1](v,vs);lis[i].className=empty?"":(p?"ok":"bad");if(!p)ok=false});
+ w.querySelector(".err").textContent=empty?"Campo vacío":"";
+ w.classList.toggle("bad",!ok);w.classList.toggle("good",ok);
+ return ok;
+}
+function row(who,delay){
+ const r=document.createElement("div");r.className="row "+who;r.style.animationDelay=delay+"s";
+ const a=document.createElement("div");a.className="av";a.textContent=who==="npc"?face():"🙋";
+ const b=document.createElement("div");b.className="bubble";
+ r.append(a,b);return [r,b];
+}
+function load(){
+ cur=LV[li];tries=0;done=false;att=false;dealt={};
+ $("hn").textContent=li+1;hearts();updBoss();
+ const chat=$("chat");chat.innerHTML="";
+ let d=0,r,b;
+ [r,b]=row("npc",d);
+ const nm=document.createElement("b");nm.textContent="El Jefe Final";
+ const sb=document.createElement("div");sb.className="sub";sb.textContent="Ronda "+(li+1)+" · "+cur.t;
+ const p=document.createElement("p");p.textContent=cur.s;
+ b.append(nm,sb,p);r.firstChild.classList.add("talk");chat.append(r);
+ cur.f.forEach(f=>{
+  d+=.25;[r,b]=row("npc",d);
+  const q=document.createElement("p");q.textContent=f.q;b.append(q);chat.append(r);
+  d+=.2;[r,b]=row("me",d);
+  const w=document.createElement("div");w.className="f";w.id="w_"+f.id;
+  const lb=document.createElement("label");lb.textContent=f.label;lb.htmlFor="i_"+f.id;
+  const inp=document.createElement("input");
+  inp.id="i_"+f.id;inp.type="text";inp.placeholder=f.ph;inp.autocomplete="off";inp.autocapitalize="off";inp.spellcheck=false;inp.setAttribute("autocorrect","off");
+  inp.oninput=()=>{if(att){const vs=vals();cur.f.forEach(g=>check(g,vs))}};
+  inp.onkeydown=e=>{if(e.key==="Enter")send()};
+  const ul=document.createElement("ul");ul.className="rules";
+  f.rules.forEach(x=>{const li2=document.createElement("li");li2.textContent=x[0];ul.append(li2)});
+  const er=document.createElement("div");er.className="err";
+  w.append(lb,inp,ul,er);b.append(w);chat.append(r);
+ });
+ [r,b]=row("npc",0);r.id="react";r.hidden=true;
+ const rt=document.createElement("p");rt.id="rt";b.append(rt);chat.append(r);
+ $("send").hidden=false;$("next").hidden=true;
+ steps();startTimer();
+ window.scrollTo({top:0,behavior:"smooth"});
+ const first=$("i_"+cur.f[0].id);if(first)first.focus({preventScroll:true});
+}
+function say(txt){
+ const r=$("react");r.hidden=false;r.firstChild.textContent=face();$("rt").textContent=txt;
+ r.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+const lock=()=>document.querySelectorAll("#chat input").forEach(i=>i.disabled=true);
+function send(){
+ if(done)return;
+ att=true;tries++;
+ const vs=vals();let all=true,n=0;
+ cur.f.forEach(f=>{
+  if(!check(f,vs))all=false;
+  else if(!dealt[f.id]){dealt[f.id]=1;n++}
+ });
+ if(n)hit(n*DMG);
+ if(all)win(n);else fail(false,n);
+}
+function win(n){
+ done=true;clearInterval(timer);
+ const s=tries===1?3:tries===2?2:1;stars[li]=s;
+ lock();
+ const last=li===LV.length-1;
+ say((hp<=0?"¡Noooo! Me has derrotado... ":"¡Argh! Eso dolió"+(n?" (−"+n*DMG+" HP)":"")+". Ronda superada. ")+"★".repeat(s)+"☆".repeat(3-s));
+ $("send").hidden=true;$("next").hidden=false;
+ $("next").textContent=last?"Ver resultado":"Siguiente ronda";
+ steps();
+}
+function fail(to,n){
+ lives--;hearts();
+ anim($("bav"),"atk");anim($("pl"),"hurt");
+ const pre=(to?"¡Se acabó el tiempo! ":n?"Acertaste "+n+" campo"+(n>1?"s":"")+" (−"+n*DMG+" HP), pero hay errores. ":"¡Ja! Tus datos son incorrectos. ")+"Te ataco: pierdes una vida. ";
+ if(lives<=0){
+  done=true;clearInterval(timer);lock();
+  say(pre+"Te quedaste sin vidas.");
+  $("send").hidden=true;$("next").hidden=false;$("next").textContent="Ver resultado";
+  return;
+ }
+ say(pre+"Te quedan "+lives+". Corrige y vuelve a enviar.");
+ if(to){const vs=vals();cur.f.forEach(f=>check(f,vs));startTimer()}
+ const bad=document.querySelector(".f.bad");
+ if(bad)bad.scrollIntoView({block:"center",behavior:"smooth"});
+}
+function finish(win){
+ clearInterval(timer);
+ $("game").hidden=true;$("end").hidden=false;
+ const t=stars.reduce((a,b)=>a+b,0);
+ $("eb").textContent=win?"🏆":"💀";
+ $("rk").textContent=win?"¡Derrotaste al Jefe Final!":"El Jefe Final te venció";
+ $("tot").textContent=(win?t+" de 30 estrellas · Vidas restantes: "+lives+".":"Llegaste a la ronda "+(li+1)+" y le quitaste "+(HPMAX-hp)+" de "+HPMAX+" HP.");
+ const d=$("det");d.innerHTML="";
+ stars.forEach((s,i)=>{if(s===undefined)return;const x=document.createElement("span");x.textContent="R"+(i+1)+" "+"★".repeat(s);d.append(x)});
+}
+function begin(){
+ stars=[];li=0;lives=3;hp=HPMAX;
+ $("start").hidden=true;$("end").hidden=true;$("game").hidden=false;
+ load();
+}
+$("go").onclick=begin;$("again").onclick=begin;
+$("send").onclick=send;
+$("next").onclick=()=>{
+ if(lives<=0)return finish(false);
+ if(li>=LV.length-1)return finish(hp<=0);
+ li++;load();
+};
+steps();
+</script>
+</body>
+</html>
